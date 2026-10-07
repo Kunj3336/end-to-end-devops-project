@@ -1,0 +1,23 @@
+# Java & Maven
+app/target/
+*.class
+*.jar
+*.war
+
+# Terraform state and secrets
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+
+# Ansible & Keys
+*.pem
+*.key
+*.id_rsa
+.vault_pass
+
+# IDE & OS
+.DS_Store
+.idea/
+.vscode/
