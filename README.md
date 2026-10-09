@@ -9,5 +9,7 @@
 
 ---
 
-### === Phase 1: In Progress ===
-- Configured Terraform foundation files (`providers.tf`, `variables.tf`, `main.tf`, `outputs.tf`) targeting `ap-south-1` region.
+### === Phase 1: AWS Foundation (Terraform) Complete ===
+- Provisioned Ubuntu 22.04 LTS EC2 (`t3.medium`, 30GB gp3 storage) in `ap-south-1` using Terraform.
+- Configured Security Group allowing ports 22 (SSH), 8080 (Jenkins), 9000 (SonarQube), 8081 (Nexus), and 8085.
+- Verified live instance creation in AWS Console and established SSH connectivity.
