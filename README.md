@@ -13,3 +13,11 @@
 - Provisioned Ubuntu 22.04 LTS EC2 (`t3.medium`, 30GB gp3 storage) in `ap-south-1` using Terraform.
 - Configured Security Group allowing ports 22 (SSH), 8080 (Jenkins), 9000 (SonarQube), 8081 (Nexus), and 8085.
 - Verified live instance creation in AWS Console and established SSH connectivity.
+
+--- 
+
+### === Phase 2: Configuration Management (Ansible) In Progress ===
+- Configured Ansible control node within WSL, linking inventory (`inventory/hosts.ini`) and global settings (`ansible.cfg`).
+- Verified programmatic SSH automation connectivity using `ansible devops_server -m ping` (Pong received).
+- Developed automated provisioning playbook (`playbooks/docker.yml`) to install `docker.io`, `containerd`, enable the system service, and append the `ubuntu` user to the `docker` security group.
+- Successfully verified playbook execution and validated idempotency (`ok=6, changed=0, failed=0`).
