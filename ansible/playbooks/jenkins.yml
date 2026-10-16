@@ -1,0 +1,50 @@
+
+---
+- name: Install and configure Jenkins CI Server
+  hosts: devops_server
+  become: true
+
+  tasks:
+    - name: Install prerequisites
+      ansible.builtin.apt:
+        name:
+          - curl
+          - ca-certificates
+          - fontconfig
+        state: present
+        update_cache: false
+
+    - name: Download current Jenkins repository signing key
+      ansible.builtin.get_url:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+        dest: /usr/share/keyrings/jenkins-keyring.asc
+        mode: '0644'
+        force: true
+
+    - name: Configure Jenkins LTS repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/"
+        state: present
+        filename: jenkins
+        update_cache: false
+
+    - name: Update APT package cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 0
+
+    - name: Install OpenJDK 21
+      ansible.builtin.apt:
+        name: openjdk-21-jre
+        state: present
+
+    - name: Install Jenkins
+      ansible.builtin.apt:
+        name: jenkins
+        state: present
+
+    - name: Ensure Jenkins service is started and enabled
+      ansible.builtin.service:
+        name: jenkins
+        state: started
+        enabled: true

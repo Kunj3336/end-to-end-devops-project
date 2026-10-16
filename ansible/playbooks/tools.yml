@@ -1,0 +1,30 @@
+---
+- name: Deploy SonarQube and Nexus using Docker
+  hosts: devops_server
+  become: true
+
+  tasks:
+    - name: Ensure max_map_count for SonarQube Elasticsearch
+      ansible.posix.sysctl:
+        name: vm.max_map_count
+        value: '262144'
+        state: present
+        reload: yes
+
+    - name: Run SonarQube Container
+      community.docker.docker_container:
+        name: sonarqube
+        image: sonarqube:lts-community
+        state: started
+        restart_policy: always
+        ports:
+          - "9000:9000"
+
+    - name: Run Nexus 3 Container
+      community.docker.docker_container:
+        name: nexus
+        image: sonatype/nexus3:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "8081:8081"
