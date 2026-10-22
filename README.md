@@ -727,5 +727,5 @@ The Board Game DB application belongs to its original authors and to my mentor's
 
 # Author
 
-**Kunj Patel**, DevOps & Cloud Engineering
+**Kunj Patel**, DevOps & Cloud Engineer
 [LinkedIn](https://www.linkedin.com/in/kunj-patel-3348ba2bb/)
