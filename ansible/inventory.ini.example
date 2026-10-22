@@ -1,0 +1,7 @@
+[servers]
+# One public IP per line. The original run targeted a single server.
+<target-server-public-ip>
+
+[servers:vars]
+ansible_user=ubuntu
+ansible_ssh_private_key_file=/home/ubuntu/finalproject-key.pem

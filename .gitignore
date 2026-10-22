@@ -1,0 +1,13 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+
+# Keys and secrets - never commit
+*.pem
+finalproject-key
+finalproject-key.pub
+*.key
+.env

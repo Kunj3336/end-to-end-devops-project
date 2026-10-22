@@ -1,0 +1,26 @@
+# RECONSTRUCTED from the Prometheus "Targets" page (screenshots/18-prometheus-target-health.png).
+# The original file was not saved; replace <monitoring-server-ip> with the host running Blackbox Exporter.
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: blackbox
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://prometheus.io
+          - https://prometheus.io
+          - http://acaa47bfeac32423a98941d776e6de58-1480642863.ap-south-1.elb.amazonaws.com   # deployed app (ELB)
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: <monitoring-server-ip>:9115

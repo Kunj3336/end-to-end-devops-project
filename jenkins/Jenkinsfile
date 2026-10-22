@@ -1,0 +1,132 @@
+// Declarative pipeline for the Jenkins job "final-project".
+// Triggered by a GitHub webhook ("GitHub hook trigger for GITScm polling").
+// Cluster name, region and credential IDs match the Jenkins and EKS screenshots.
+// Note: kubernetes/deployment-service.yaml is also kept in the application repo
+// so the deploy stage can apply it from the Jenkins workspace.
+pipeline {
+    agent any
+
+    tools {
+        jdk 'openjdk-17'
+        maven 'maven'
+    }
+
+    environment {
+        AWS_REGION   = "ap-south-1"
+        CLUSTER_NAME = "my-eks-cluster"
+        DOCKER_IMAGE = "kunj0701/boardgameprojectimage"
+    }
+
+    stages {
+        stage('Git-clone') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Kunj3336/Board_game_DBproject.git'
+            }
+        }
+        stage('Maven compile') {
+            steps { sh 'mvn compile' }
+        }
+        stage('Maven test') {
+            steps { sh 'mvn test' }
+        }
+        stage('SonarQube code analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    sh 'mvn verify sonar:sonar -Dsonar.projectName=BoardGame -Dsonar.projectKey=BoardGame'
+                }
+            }
+        }
+        stage('Trivy filesystem scan') {
+            steps {
+                sh '''
+                    mkdir -p reports
+                    curl -fsSL -o trivy-template.tpl https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl
+                    trivy fs --format table .
+                    trivy fs . --format template --template "@trivy-template.tpl" -o reports/trivy-report.html
+                '''
+            }
+        }
+        stage('Publish Trivy report') {
+            steps {
+                publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true,
+                             reportDir: 'reports', reportFiles: 'trivy-report.html',
+                             reportName: 'Trivy Security Report'])
+            }
+        }
+        stage('Maven package') {
+            steps { sh 'mvn package' }
+        }
+        stage('Trivy build scan') {
+            steps {
+                sh '''
+                    trivy fs --format table target/
+                    trivy fs target/ --format template --template "@trivy-template.tpl" -o reports/trivy-build-report.html
+                '''
+            }
+        }
+        stage('Publish build scan') {
+            steps {
+                publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true,
+                             reportDir: 'reports', reportFiles: 'trivy-build-report.html',
+                             reportName: 'Trivy Build Scan Report'])
+            }
+        }
+        stage('Deploy artifact to Nexus') {
+            steps {
+                withMaven(globalMavenSettingsConfig: 'maven-settings', jdk: 'openjdk-17', maven: 'maven', traceability: true) {
+                    sh 'mvn clean deploy'
+                }
+            }
+        }
+        stage('Build Docker image') {
+            steps {
+                withDockerRegistry(credentialsId: 'dockerid', url: 'https://index.docker.io/v1/') {
+                    sh 'docker build -t ${DOCKER_IMAGE} .'
+                }
+            }
+        }
+        stage('Trivy image scan') {
+            steps {
+                sh '''
+                    trivy image --format table ${DOCKER_IMAGE}
+                    trivy image ${DOCKER_IMAGE} --format template --template "@trivy-template.tpl" -o reports/trivy-image-report.html
+                '''
+            }
+        }
+        stage('Publish image scan') {
+            steps {
+                publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true,
+                             reportDir: 'reports', reportFiles: 'trivy-image-report.html',
+                             reportName: 'Trivy Image Security Report'])
+            }
+        }
+        stage('Push image to Docker Hub') {
+            steps {
+                withDockerRegistry(credentialsId: 'dockerid', url: 'https://index.docker.io/v1/') {
+                    sh 'docker push ${DOCKER_IMAGE}'
+                }
+            }
+        }
+        stage('Deploy to EKS') {
+            steps {
+                withAWS(credentials: 'awsid', region: "${AWS_REGION}") {
+                    sh '''
+                        aws eks update-kubeconfig --region ${AWS_REGION} --name ${CLUSTER_NAME}
+                        kubectl apply -f deployment-service.yaml
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            mail to: '<notify-email>', subject: 'Deployment success mail',
+                 body: 'Hello, this mail is to notify that the deployment is success'
+        }
+        failure {
+            mail to: '<notify-email>', subject: 'Deployment failure mail',
+                 body: 'Hello, this mail is to notify that the deployment is failed'
+        }
+    }
+}
